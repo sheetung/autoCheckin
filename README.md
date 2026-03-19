@@ -2,11 +2,7 @@
 
 一个基于青龙面板的自动签到工具，支持科研通和NewAPI站点的自动签到，支持多账号/多站点管理、推送通知和异常处理。
 
-![image](https://img.shields.io/github/stars/sheetung/ablesciCheck)
-
-![image](https://img.shields.io/github/forks/sheetung/ablesciCheck)
-
-![image](https://img.shields.io/github/issues/sheetung/ablesciCheck)
+![image](https://img.shields.io/github/stars/sheetung/autoCheckin) | ![image](https://img.shields.io/github/forks/sheetung/autoCheckin) | ![image](https://img.shields.io/github/issues/sheetung/autoCheckin)
 
 ## 🌟 功能特性
 
@@ -30,7 +26,7 @@
 在青龙面板「订阅管理」中添加：
 
 - **名称**：签到脚本
-- **链接**：`https://github.com/sheetung/ablesciCheck.git`
+- **链接**：`https://github.com/sheetung/autoCheckin.git`
 - **分支**：`master`
 - **定时规则**：根据需求设置（例如 `0 0 * * *` 每天凌晨执行）
 - **文件后缀**：`py`
