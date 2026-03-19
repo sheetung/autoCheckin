@@ -181,6 +181,34 @@ class NewAPI:
         
         return result
 
+def parse_sign_details(result):
+    """解析签到详细信息"""
+    details = {
+        "msg": "签到成功",
+        "total_checkins": 0,
+        "total_quota": 0,
+        "today_quota": 0,
+        "is_already_checked": False
+    }
+
+    data = result.get('data', {})
+    details['msg'] = data.get('message', '签到成功')
+
+    detail = data.get('detail', {})
+    if detail.get('data'):
+        stats = detail['data'].get('stats', {})
+        details['total_checkins'] = stats.get('total_checkins', 0)
+        details['total_quota'] = stats.get('total_quota', 0) * 0.01
+
+        records = stats.get('records', [])
+        if records:
+            details['today_quota'] = records[0].get('quota_awarded', 0) * 0.01
+            if stats.get('checkin_today'):
+                details['is_already_checked'] = True
+
+    return details
+
+
 def send_bark_notification(results):
     if not bark_push:
         print("未配置Bark推送，跳过通知")
@@ -191,11 +219,23 @@ def send_bark_notification(results):
 
     for idx, (url, result) in enumerate(results, 1):
         if result.get('status') == 'success':
-            msg = result.get('data', {}).get('msg', '签到成功（无详细信息）')
-            body_lines.append(f"站点{idx} ({url}): {msg}")
+            details = parse_sign_details(result)
+            site_name = url.replace('https://', '').replace('http://', '').split('/')[0]
+
+            if details['is_already_checked']:
+                body_lines.append(
+                    f"{site_name}: 今日已签到 | 累计{details['total_checkins']}天 | "
+                    f"共获¥{details['total_quota']:.2f}"
+                )
+            else:
+                body_lines.append(
+                    f"{site_name}: 签到成功 | 本次+¥{details['today_quota']:.2f} | "
+                    f"累计{details['total_checkins']}天 | 共¥{details['total_quota']:.2f}"
+                )
         else:
             error = result.get('message', '未知错误')
-            body_lines.append(f"站点{idx} ({url}): ❌签到失败 - {error}")
+            site_name = url.replace('https://', '').replace('http://', '').split('/')[0] if url else f"站点{idx}"
+            body_lines.append(f"{site_name}: ❌签到失败 - {error}")
 
     body = "\n".join(body_lines)
 
@@ -224,14 +264,45 @@ def send_dingtalk_notification(results):
 
     title = "NewAPI签到"
     text_lines = []
-    text_lines.append(f"# {title}")
+    text_lines.append(f"## {title}")
+    text_lines.append("")
+
+    success_count = 0
+    fail_count = 0
+
     for idx, (url, result) in enumerate(results, 1):
         if result.get('status') == 'success':
-            msg = result.get('data', {}).get('msg', '签到成功（无详细信息）')
-            text_lines.append(f"站点{idx} ({url}): {msg}\n")
+            details = parse_sign_details(result)
+            site_name = url.replace('https://', '').replace('http://', '').split('/')[0]
+
+            if details['is_already_checked']:
+                text_lines.append(
+                    f"**站点{idx}**: {site_name}\n"
+                    f"- 状态: 今日已签到\n"
+                    f"- 累计签到: {details['total_checkins']} 天\n"
+                    f"- 累计获得: ¥{details['total_quota']:.2f}\n"
+                )
+            else:
+                text_lines.append(
+                    f"**站点{idx}**: {site_name}\n"
+                    f"- 状态: 签到成功\n"
+                    f"- 本次获得: ¥{details['today_quota']:.2f}\n"
+                    f"- 累计签到: {details['total_checkins']} 天\n"
+                    f"- 累计获得: ¥{details['total_quota']:.2f}\n"
+                )
+            success_count += 1
         else:
             error = result.get('message', '未知错误')
-            text_lines.append(f"站点{idx} ({url}): ❌签到失败 - {error}\n")
+            site_name = url.replace('https://', '').replace('http://', '').split('/')[0] if url else f"站点{idx}"
+            text_lines.append(
+                f"**站点{idx}**: {site_name}\n"
+                f"- 状态: ❌ 签到失败\n"
+                f"- 原因: {error}\n"
+            )
+            fail_count += 1
+
+    text_lines.append("---")
+    text_lines.append(f"**汇总**: 成功 {success_count} 个，失败 {fail_count} 个")
 
     text = "\n".join(text_lines)
 
