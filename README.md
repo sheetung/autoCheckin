@@ -46,7 +46,7 @@ export ABLESCI_COOKIES="cookie1&cookie2&cookie3"
 
 ```bash
 # 多个站点用&分隔，每个站点格式为 url@cookie
-export NEWAPI_ACCOUNTS="http://127.0.0.1:3333/@session=your_cookie_here&http://example.com/@session=another_cookie"
+export NEWAPI_ACCOUNTS="https://sample.com/@session=your_cookie_here&http://example.com/@session=another_cookie"
 ```
 
 ### 3. 推送配置（可选）
@@ -88,7 +88,7 @@ export BARK_PUSH="your_bark_key"
 
 ```bash
 正在签到第 1 个站点...
-正在签到站点: http://127.0.0.1:3333
+正在签到站点: https://sample.com
 使用 Cookie: session=MTc3MzcyNTk5...
 签到结果: 今日已签到
 累计签到: 2 天
@@ -99,7 +99,7 @@ export BARK_PUSH="your_bark_key"
 第 1 个站点签到完成
 
 签到结果汇总：
-站点: http://127.0.0.1:3333/
+站点: https://sample.com
 结果: {'status': 'success', 'message': '签到成功', 'data': {'message': '今日已签到', 'success': False, 'detail': {'data': {'enabled': True, 'max_quota': 10, 'min_quota': 1, 'stats': {'checked_in_today': True, 'checkin_count': 2, 'records': [{'checkin_date': '2026-03-19', 'quota_awarded': 2}, {'checkin_date': '2026-03-16', 'quota_awarded': 1}], 'total_checkins': 2, 'total_quota': 3}}, 'success': True}}
 
 ✅ bark推送成功
@@ -122,7 +122,7 @@ export BARK_PUSH="your_bark_key"
 
 ## 📢 反馈与贡献
 
-- 提交问题：[GitHub Issues](https://github.com/sheetung/ablesciCheck/issues)
-- 代码贡献：[Fork & Pull Request](https://github.com/sheetung/ablesciCheck/pulls)
+- 提交问题：[GitHub Issues](https://github.com/sheetung/autoCheckin/issues)
+- 代码贡献：[Fork & Pull Request](https://github.com/sheetung/autoCheckin/pulls)
 
 > 开源协议：MIT License
