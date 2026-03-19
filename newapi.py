@@ -26,42 +26,131 @@ class NewAPI:
     def __init__(self, url, cookie, user_id="2"):
         self.url = url.rstrip('/')
         self.cookie = cookie
-        self.user_id = user_id
+        
+        # 从cookie中提取用户ID（如果存在）
+        if "user_id=" in cookie:
+            self.user_id = cookie.split("user_id=")[1].split("&")[0]
+        elif "userid=" in cookie:
+            self.user_id = cookie.split("userid=")[1].split("&")[0]
+        elif "uid=" in cookie:
+            self.user_id = cookie.split("uid=")[1].split("&")[0]
+        else:
+            self.user_id = user_id
 
     def sign(self):
-        headers = {
+        # 签到URL，根据NewAPI站点的实际签到接口调整
+        # 从测试结果看，正确的接口路径是 /api/user/checkin
+        sign_url = f"{self.url}/api/user/checkin"
+        
+        # 基础头部
+        base_headers = {
             "Accept": "application/json, text/javascript, */*; q=0.01",
             "Accept-Encoding": "gzip, deflate, br",
             "Accept-Language": "zh-CN,zh;q=0.9",
-            "Cookie": self.cookie,
             "DNT": "1",
             "Referer": f"{self.url}/",
             "Sec-Fetch-Dest": "empty",
             "Sec-Fetch-Mode": "cors",
             "Sec-Fetch-Site": "same-origin",
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36",
-            "X-Requested-With": "XMLHttpRequest",
-            "New-Api-User": self.user_id  # 使用传入的用户ID
+            "X-Requested-With": "XMLHttpRequest"
         }
-        # 签到URL，根据NewAPI站点的实际签到接口调整
-        # 从测试结果看，正确的接口路径是 /api/user/checkin
-        sign_url = f"{self.url}/api/user/checkin"
-        try:
-            # 尝试使用POST请求进行签到
-            response = requests.post(sign_url, headers=headers)
-            response.raise_for_status()
-            result = response.json()
-            
-            # 获取详细的签到信息
-            detail_response = requests.get(sign_url, headers=headers)
-            detail_response.raise_for_status()
-            detail_result = detail_response.json()
-            
-            # 合并结果
-            result['detail'] = detail_result
-            return {"status": "success", "message": "签到成功", "data": result}
-        except requests.exceptions.RequestException as e:
-            return {"status": "error", "message": f"签到失败: {str(e)}"}
+        
+        # 读取代理环境变量
+        proxies = {}
+        http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
+        https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+        all_proxy = os.environ.get("ALL_PROXY") or os.environ.get("all_proxy")
+        
+        if http_proxy:
+            proxies["http"] = http_proxy
+        if https_proxy:
+            proxies["https"] = https_proxy
+        if all_proxy:
+            proxies["http"] = all_proxy
+            proxies["https"] = all_proxy
+        
+        if proxies:
+            print(f"使用代理: {proxies}")
+        
+        # 尝试不同的认证方式
+        auth_attempts = []
+        
+        # 尝试: 使用session cookie认证
+        if "session=" in self.cookie:
+            auth_attempts.append({
+                "name": "session cookie",
+                "headers": dict(base_headers, **{
+                    "Cookie": self.cookie,
+                    "New-Api-User": self.user_id
+                })
+            })
+        
+        # 尝试: 默认使用cookie认证
+        auth_attempts.append({
+            "name": "default cookie",
+            "headers": dict(base_headers, **{
+                "Cookie": self.cookie
+            })
+        })
+        
+        # 尝试每种认证方式
+        for attempt in auth_attempts:
+            print(f"尝试认证方式: {attempt['name']}")
+            try:
+                # 尝试使用POST请求进行签到
+                response = requests.post(sign_url, headers=attempt['headers'], proxies=proxies)
+                
+                # 处理响应
+                if response.status_code == 200:
+                    # 检查是否是Cloudflare验证页面
+                    if '<title>Just a moment...</title>' in response.text or 'cloudflare' in response.text.lower():
+                        print(f"认证方式 {attempt['name']} 遇到Cloudflare验证")
+                        return {"status": "error", "message": "签到失败: 遇到Cloudflare人机验证，请手动访问站点完成验证后再尝试"}
+                    
+                    try:
+                        result = response.json()
+                        
+                        # 检查是否认证成功
+                        if result.get('success') or 'detail' in result:
+                            # 获取详细的签到信息
+                            detail_response = requests.get(sign_url, headers=attempt['headers'], proxies=proxies)
+                            if detail_response.status_code == 200:
+                                # 检查详细信息是否是Cloudflare验证页面
+                                if '<title>Just a moment...</title>' in detail_response.text or 'cloudflare' in detail_response.text.lower():
+                                    print("获取详细信息时遇到Cloudflare验证")
+                                else:
+                                    try:
+                                        detail_result = detail_response.json()
+                                        result['detail'] = detail_result
+                                    except:
+                                        pass
+                            return {"status": "success", "message": "签到成功", "data": result}
+                        else:
+                            # 认证成功但签到失败（如已签到）
+                            return {"status": "success", "message": "签到成功", "data": result}
+                    except ValueError:
+                        # 响应不是JSON格式，可能是Cloudflare验证页面
+                        if '<title>Just a moment...</title>' in response.text or 'cloudflare' in response.text.lower():
+                            print(f"认证方式 {attempt['name']} 遇到Cloudflare验证")
+                            return {"status": "error", "message": "签到失败: 遇到Cloudflare人机验证，请手动访问站点完成验证后再尝试"}
+                        else:
+                            print(f"认证方式 {attempt['name']} 响应不是JSON格式: {response.text[:100]}...")
+                            return {"status": "error", "message": "签到失败: 响应格式错误"}
+                elif response.status_code == 403:
+                    # 403错误可能是Cloudflare验证
+                    if '<title>Just a moment...</title>' in response.text or 'cloudflare' in response.text.lower():
+                        print(f"认证方式 {attempt['name']} 遇到Cloudflare验证")
+                        return {"status": "error", "message": "签到失败: 遇到Cloudflare人机验证，请手动访问站点完成验证后再尝试"}
+                    else:
+                        print(f"认证方式 {attempt['name']} 失败: {response.status_code}")
+                else:
+                    print(f"认证方式 {attempt['name']} 失败: {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                print(f"认证方式 {attempt['name']} 异常: {str(e)}")
+        
+        # 所有认证方式都失败
+        return {"status": "error", "message": "签到失败: 所有认证方式都失败，可能需要有效的access token"}
 
     def main(self):
         print(f"正在签到站点: {self.url}")
@@ -186,25 +275,45 @@ def send_dingtalk_notification(results):
         print(f"❌ 钉钉推送失败: {str(e)}")
 
 def main():
-    # 读取环境变量 NEWAPI_ACCOUNTS，格式为 url@cookie&url@cookie
+    # 读取环境变量 NEWAPI_ACCOUNTS，格式为 url@userid@cookie&url@userid@cookie
     accounts = os.getenv("NEWAPI_ACCOUNTS")
     if not accounts:
         print("未找到环境变量 NEWAPI_ACCOUNTS，请检查配置")
         return
 
     # 解析账号列表
-    account_list = accounts.split("&")
+    # 注意：需要正确处理cookie中包含&的情况
+    account_list = []
+    current_account = ""
+    at_count = 0
+    
+    for char in accounts:
+        if char == "@":
+            at_count += 1
+            current_account += char
+        elif char == "&" and at_count >= 2:
+            account_list.append(current_account)
+            current_account = ""
+            at_count = 0
+        else:
+            current_account += char
+    
+    if current_account:
+        account_list.append(current_account)
+    
     results = []
     
     for i, account in enumerate(account_list):
         print(f"正在签到第 {i + 1} 个站点...")
         try:
-            # 解析 url@cookie 格式
-            url, cookie = account.split("@")
-            
-            # 从URL中提取用户ID（如果需要）
-            # 这里假设用户ID是固定的，实际使用时可能需要从cookie或URL中提取
-            user_id = "2"  # 默认为用户ID 2
+            # 解析 url@userid@cookie 格式
+            parts = account.split("@")
+            if len(parts) == 3:
+                url, user_id, cookie = parts
+            else:
+                # 兼容旧格式 url@cookie
+                url, cookie = parts
+                user_id = "2"  # 默认为用户ID 2
             
             # 使用正确的路径进行签到
             result = NewAPI(url, cookie, user_id).main()

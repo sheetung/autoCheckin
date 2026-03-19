@@ -45,8 +45,8 @@ export ABLESCI_COOKIES="cookie1&cookie2&cookie3"
 在青龙面板「环境变量」中设置：
 
 ```bash
-# 多个站点用&分隔，每个站点格式为 url@cookie
-export NEWAPI_ACCOUNTS="https://sample.com/@session=your_cookie_here&http://example.com/@session=another_cookie"
+# 多个站点用&分隔，每个站点格式为 url@userid@cookie
+export NEWAPI_ACCOUNTS="https://sample.com/@12345@session=your_cookie_here&http://example.com/@67890@session=another_cookie"
 ```
 
 ### 3. 推送配置（可选）
@@ -88,28 +88,24 @@ export BARK_PUSH="your_bark_key"
 
 ```bash
 正在签到第 1 个站点...
-正在签到站点: https://sample.com
-使用 Cookie: session=MTc3MzcyNTk5...
-签到结果: 今日已签到
-累计签到: 2 天
-累计获得: ¥0.0300
-最近签到记录:
-  - 2026-03-19: ¥0.02
-  - 2026-03-16: ¥0.01
+正在签到站点: https://sg.uiuiapi.com
+使用 Cookie: session=MTc3Mzg5ODIy...
+尝试认证方式: session cookie
+签到结果: {'status': 'success', 'message': '签到成功', 'data': {'message': '今日已签到', 'success': False}}
 第 1 个站点签到完成
 
 签到结果汇总：
-站点: https://sample.com
-结果: {'status': 'success', 'message': '签到成功', 'data': {'message': '今日已签到', 'success': False, 'detail': {'data': {'enabled': True, 'max_quota': 10, 'min_quota': 1, 'stats': {'checked_in_today': True, 'checkin_count': 2, 'records': [{'checkin_date': '2026-03-19', 'quota_awarded': 2}, {'checkin_date': '2026-03-16', 'quota_awarded': 1}], 'total_checkins': 2, 'total_quota': 3}}, 'success': True}}
+站点: https://sg.uiuiapi.com/
+结果: {'status': 'success', 'message': '签到成功', 'data': {'message': '今日已签到', 'success': False}}
 
-✅ bark推送成功
-✅ 钉钉推送成功
+❌ Bark推送失败: 400 Client Error: Bad Request for url: https://api.day.app/%7Bkey%7D
+未配置钉钉推送，跳过通知
 ```
 
 ## ⚠️ 注意事项
 
 1. 钉钉推送功能需要正确配置机器人权限，例如关键词和`DD_BOT_SECRET`
-2. NewAPI站点的Cookie需要包含session信息，格式为`session=your_session_id`
+2. NewAPI站点的Cookie需要包含session信息，格式为`session=your_session_id`，环境变量格式为`url@userid@cookie`
 3. 本工具仅用于学习交流，禁止用于商业用途
 
 ## 📜 声明
