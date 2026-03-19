@@ -58,17 +58,11 @@ class NewAPI:
         
         # 读取代理环境变量
         proxies = {}
-        http_proxy = os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy")
-        https_proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
-        all_proxy = os.environ.get("ALL_PROXY") or os.environ.get("all_proxy")
+        newapi_proxy = os.environ.get("NEWAPI_PROXY") or os.environ.get("newapi_proxy")
         
-        if http_proxy:
-            proxies["http"] = http_proxy
-        if https_proxy:
-            proxies["https"] = https_proxy
-        if all_proxy:
-            proxies["http"] = all_proxy
-            proxies["https"] = all_proxy
+        if newapi_proxy:
+            proxies["http"] = newapi_proxy
+            proxies["https"] = newapi_proxy
         
         if proxies:
             print(f"使用代理: {proxies}")

@@ -49,7 +49,16 @@ export ABLESCI_COOKIES="cookie1&cookie2&cookie3"
 export NEWAPI_ACCOUNTS="https://sample.com/@12345@session=your_cookie_here&http://example.com/@67890@session=another_cookie"
 ```
 
-### 3. 推送配置（可选）
+### 3. 代理配置（可选）
+
+在青龙面板「配置文件」中设置：
+
+```bash
+# NewAPI 代理配置（可选）
+export NEWAPI_PROXY="http://127.0.0.1:7890"
+```
+
+### 4. 推送配置（可选）
 
 在青龙面板「配置文件」中设置：
 
