@@ -151,8 +151,9 @@ class NewAPI:
         if result.get('data'):
             details = parse_sign_details(result)
             print(f"签到结果: {details['msg']}")
+            print(f"今日配额: {format_quota(details['today_quota'])} 配额 (${format_quota_usd(details['today_quota'])})")
             print(f"累计签到: {details['total_checkins']} 天")
-            print(f"累计获得: ¥{details['total_quota']:.4f}")
+            print(f"累计配额: {format_quota(details['total_quota'])} 配额 (${format_quota_usd(details['total_quota'])})")
 
             detail_data = result['data'].get('detail', {}).get('data', {})
             records = detail_data.get('stats', {}).get('records', [])
@@ -160,12 +161,25 @@ class NewAPI:
                 print("最近签到记录:")
                 for record in records:
                     日期 = record.get('checkin_date', '未知')
-                    获得金额 = (record.get('quota_awarded') or 0) * 0.01
-                    print(f"  - {日期}: ¥{获得金额:.2f}")
+                    获得配额 = record.get('quota_awarded') or 0
+                    print(f"  - {日期}: {format_quota(获得配额)} 配额 (${format_quota_usd(获得配额)})")
         else:
             print(f"签到结果: {result}")
 
         return result
+
+
+def format_quota(value):
+    try:
+        return f"{int(value):,}"
+    except (TypeError, ValueError):
+        return str(value)
+
+def format_quota_usd(value):
+    try:
+        return f"{float(value) / 500000:.4f}"
+    except (TypeError, ValueError):
+        return "0.0000"
 
 def parse_sign_details(result):
     """解析签到详细信息"""
@@ -196,7 +210,7 @@ def parse_sign_details(result):
             details['total_checkins'] = len(valid_records)
             details['total_quota'] = sum(
                 (record.get('quota_awarded') or 0) for record in valid_records
-            ) * 0.01
+            )
 
             today_str = datetime.now().strftime("%Y-%m-%d")
             today_record = next(
@@ -205,7 +219,7 @@ def parse_sign_details(result):
             )
             latest_record = valid_records[0]
             current_record = today_record or latest_record
-            details['today_quota'] = (current_record.get('quota_awarded') or 0) * 0.01
+            details['today_quota'] = current_record.get('quota_awarded') or 0
         else:
             details['total_checkins'] = stats.get('total_checkins', 0)
 
@@ -231,12 +245,13 @@ def send_bark_notification(results):
             if details['is_already_checked']:
                 body_lines.append(
                     f"{site_name}: 今日已签到 | 累计{details['total_checkins']}天 | "
-                    f"共获¥{details['total_quota']:.2f}"
+                    f"今日{format_quota(details['today_quota'])}配额(${format_quota_usd(details['today_quota'])}) | "
+                    f"累计{format_quota(details['total_quota'])}配额(${format_quota_usd(details['total_quota'])})"
                 )
             else:
                 body_lines.append(
-                    f"{site_name}: 签到成功 | 本次+¥{details['today_quota']:.2f} | "
-                    f"累计{details['total_checkins']}天 | 共¥{details['total_quota']:.2f}"
+                    f"{site_name}: 签到成功 | 今日+{format_quota(details['today_quota'])}配额(${format_quota_usd(details['today_quota'])}) | "
+                    f"累计{details['total_checkins']}天 | 累计{format_quota(details['total_quota'])}配额(${format_quota_usd(details['total_quota'])})"
                 )
         else:
             error = result.get('message', '未知错误')
@@ -285,16 +300,17 @@ def send_dingtalk_notification(results):
                 text_lines.append(
                     f"**站点{idx}**: {site_name}\n"
                     f"- 状态: 今日已签到\n"
+                    f"- 今日配额: {format_quota(details['today_quota'])} 配额 (${format_quota_usd(details['today_quota'])})\n"
                     f"- 累计签到: {details['total_checkins']} 天\n"
-                    f"- 累计获得: ¥{details['total_quota']:.2f}\n"
+                    f"- 累计配额: {format_quota(details['total_quota'])} 配额 (${format_quota_usd(details['total_quota'])})\n"
                 )
             else:
                 text_lines.append(
                     f"**站点{idx}**: {site_name}\n"
                     f"- 状态: 签到成功\n"
-                    f"- 本次获得: ¥{details['today_quota']:.2f}\n"
+                    f"- 今日配额: {format_quota(details['today_quota'])} 配额 (${format_quota_usd(details['today_quota'])})\n"
                     f"- 累计签到: {details['total_checkins']} 天\n"
-                    f"- 累计获得: ¥{details['total_quota']:.2f}\n"
+                    f"- 累计配额: {format_quota(details['total_quota'])} 配额 (${format_quota_usd(details['total_quota'])})\n"
                 )
             success_count += 1
         else:
