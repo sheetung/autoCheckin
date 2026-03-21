@@ -9,6 +9,7 @@ import hmac
 import hashlib
 import base64
 import urllib.parse
+from datetime import datetime
 
 # 添加bark推送
 bark_push = "https://api.day.app/{key}" #(自建推送的自行替换整段url，非自建只需替换key即可)
@@ -150,35 +151,24 @@ class NewAPI:
         print(f"正在签到站点: {self.url}")
         print(f"使用 Cookie: {self.cookie[:20]}...")
         result = self.sign()
-        
-        # 解析并显示详细的签到信息
+
         if result.get('data'):
-            签到状态 = result['data'].get('message', '未知')
-            详细信息 = result['data'].get('detail', {})
-            
-            if 详细信息.get('data'):
-                数据 = 详细信息['data']
-                统计信息 = 数据.get('stats', {})
-                总签到次数 = 统计信息.get('total_checkins', 0)
-                总获得金额 = 统计信息.get('total_quota', 0) * 0.01  # 假设1配额=0.01元
-                
-                print(f"签到结果: {签到状态}")
-                print(f"累计签到: {总签到次数} 天")
-                print(f"累计获得: ¥{总获得金额:.4f}")
-                
-                # 显示最近的签到记录
-                记录 = 统计信息.get('records', [])
-                if 记录:
-                    print("最近签到记录:")
-                    for 一条记录 in 记录:
-                        日期 = 一条记录.get('checkin_date', '未知')
-                        获得金额 = 一条记录.get('quota_awarded', 0) * 0.01
-                        print(f"  - {日期}: ¥{获得金额:.2f}")
-            else:
-                print(f"签到结果: {result}")
+            details = parse_sign_details(result)
+            print(f"签到结果: {details['msg']}")
+            print(f"累计签到: {details['total_checkins']} 天")
+            print(f"累计获得: ¥{details['total_quota']:.4f}")
+
+            detail_data = result['data'].get('detail', {}).get('data', {})
+            records = detail_data.get('stats', {}).get('records', [])
+            if records:
+                print("最近签到记录:")
+                for record in records:
+                    日期 = record.get('checkin_date', '未知')
+                    获得金额 = (record.get('quota_awarded') or 0) * 0.01
+                    print(f"  - {日期}: ¥{获得金额:.2f}")
         else:
             print(f"签到结果: {result}")
-        
+
         return result
 
 def parse_sign_details(result):
@@ -193,18 +183,38 @@ def parse_sign_details(result):
 
     data = result.get('data', {})
     details['msg'] = data.get('message', '签到成功')
+    message = str(details['msg'])
+    details['is_already_checked'] = (
+        data.get('success') is False or
+        '\u5df2\u7b7e\u5230' in message or
+        '\u5df2\u7ecf\u7b7e\u5230' in message
+    )
 
     detail = data.get('detail', {})
     if detail.get('data'):
         stats = detail['data'].get('stats', {})
-        details['total_checkins'] = stats.get('total_checkins', 0)
-        details['total_quota'] = stats.get('total_quota', 0) * 0.01
-
         records = stats.get('records', [])
-        if records:
-            details['today_quota'] = records[0].get('quota_awarded', 0) * 0.01
-            if stats.get('checkin_today'):
-                details['is_already_checked'] = True
+        valid_records = [record for record in records if isinstance(record, dict)]
+
+        if valid_records:
+            details['total_checkins'] = len(valid_records)
+            details['total_quota'] = sum(
+                (record.get('quota_awarded') or 0) for record in valid_records
+            ) * 0.01
+
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            today_record = next(
+                (record for record in valid_records if str(record.get('checkin_date', '')).startswith(today_str)),
+                None
+            )
+            latest_record = valid_records[0]
+            current_record = today_record or latest_record
+            details['today_quota'] = (current_record.get('quota_awarded') or 0) * 0.01
+        else:
+            details['total_checkins'] = stats.get('total_checkins', 0)
+
+        if stats.get('checkin_today'):
+            details['is_already_checked'] = True
 
     return details
 
