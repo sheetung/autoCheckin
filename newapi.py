@@ -106,24 +106,20 @@ class NewAPI:
                     try:
                         result = response.json()
                         
-                        # 检查是否认证成功
-                        if result.get('success') or 'detail' in result:
-                            # 获取详细的签到信息
-                            detail_response = requests.get(sign_url, headers=attempt['headers'], proxies=proxies)
-                            if detail_response.status_code == 200:
-                                # 检查详细信息是否是Cloudflare验证页面
-                                if '<title>Just a moment...</title>' in detail_response.text or 'cloudflare' in detail_response.text.lower():
-                                    print("获取详细信息时遇到Cloudflare验证")
-                                else:
-                                    try:
-                                        detail_result = detail_response.json()
-                                        result['detail'] = detail_result
-                                    except:
-                                        pass
-                            return {"status": "success", "message": "签到成功", "data": result}
-                        else:
-                            # 认证成功但签到失败（如已签到）
-                            return {"status": "success", "message": "签到成功", "data": result}
+                        # 无论是签到成功还是今日已签到，都尽量继续拉取详情统计
+                        detail_response = requests.get(sign_url, headers=attempt['headers'], proxies=proxies)
+                        if detail_response.status_code == 200:
+                            # 检查详细信息是否是Cloudflare验证页面
+                            if '<title>Just a moment...</title>' in detail_response.text or 'cloudflare' in detail_response.text.lower():
+                                print("获取详细信息时遇到Cloudflare验证")
+                            else:
+                                try:
+                                    detail_result = detail_response.json()
+                                    result['detail'] = detail_result
+                                except:
+                                    pass
+
+                        return {"status": "success", "message": "签到成功", "data": result}
                     except ValueError:
                         # 响应不是JSON格式，可能是Cloudflare验证页面
                         if '<title>Just a moment...</title>' in response.text or 'cloudflare' in response.text.lower():
