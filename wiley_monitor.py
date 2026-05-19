@@ -216,7 +216,7 @@ def send_bark_notification(changes, all_submissions):
         print("无变动，跳过Bark通知")
         return
 
-    title = "Wiley论文状态变动"
+    title = "【autoCheckin】Wiley论文状态变动"
     body_lines = []
     for change in changes:
         body_lines.append(change["detail"])
@@ -247,7 +247,7 @@ def send_dingtalk_notification(changes, all_submissions):
         print("无变动，跳过钉钉通知")
         return
 
-    title = "Wiley论文状态变动"
+    title = "【autoCheckin】Wiley论文状态变动"
     text_lines = [f"## {title}", ""]
 
     for change in changes:
