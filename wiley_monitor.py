@@ -260,7 +260,7 @@ def send_dingtalk_notification(changes, all_submissions):
     text_lines.append("")
     for sub in all_submissions:
         status = sub["status"]
-        text_lines.append(f"{sub['manuscript_id']} | {sub['title'][:35]}... | {status}")
+        text_lines.append(f"{sub['manuscript_id']} | {sub['title'][:35]}... | **{status}**")
 
     text = "\n".join(text_lines)
 
