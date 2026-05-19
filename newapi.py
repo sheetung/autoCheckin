@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 new Env('NewAPI签到');
+name: NewAPI签到
+cron: 0 0 * * *
 """
 import os
 import requests

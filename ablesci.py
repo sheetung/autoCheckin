@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 new Env('科研通签到');
+name: 科研通签到
+cron: 0 0 * * *
 """
 import os
 import requests
