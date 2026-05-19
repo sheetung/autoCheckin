@@ -1,6 +1,6 @@
-# 科研通 & NewAPI 青龙签到脚本
+# 青龙自动签到 & 状态监控脚本
 
-一个基于青龙面板的自动签到工具，支持科研通和NewAPI站点的自动签到，支持多账号/多站点管理、推送通知和异常处理。
+基于青龙面板的自动签到与状态监控工具，支持科研通、NewAPI签到和Wiley论文投稿状态监控，支持多账号/多站点管理、推送通知和异常处理。
 
 ![image](https://img.shields.io/github/stars/sheetung/autoCheckin) | ![image](https://img.shields.io/github/forks/sheetung/autoCheckin) | ![image](https://img.shields.io/github/issues/sheetung/autoCheckin)
 
@@ -9,6 +9,7 @@
 1. **多账号/多站点管理**：
    - 科研通：支持多个账号同时签到
    - NewAPI：支持多个站点同时签到
+   - Wiley：支持多账号论文投稿状态监控（检测状态变更、新通知等）
 2. **智能识别状态**：自动判断签到结果（成功 / 失败 / 已签到）
 3. **详细签到信息**：
    - 科研通：显示签到状态
@@ -49,6 +50,16 @@ export ABLESCI_COOKIES="cookie1&cookie2&cookie3"
 export NEWAPI_ACCOUNTS="https://sample.com/@12345@session=your_cookie_here&http://example.com/@67890@session=another_cookie"
 ```
 
+#### Wiley论文状态监控
+在青龙面板「环境变量」中设置：
+
+```bash
+# 多个账号用&分隔（一般只需一个）
+export WILEY_COOKIES="your_wiley_cookie_here"
+```
+
+Cookie 获取方式：登录 https://authors.wiley.com/dashboard 后，F12 打开开发者工具 → Network → 刷新页面 → 点击任意请求 → 复制 Request Headers 中的 Cookie 值。
+
 ### 3. 代理配置（可选）
 
 在青龙面板「配置文件」中设置：
@@ -56,6 +67,9 @@ export NEWAPI_ACCOUNTS="https://sample.com/@12345@session=your_cookie_here&http:
 ```bash
 # NewAPI 代理配置（可选）
 export NEWAPI_PROXY="http://127.0.0.1:7890"
+
+# Wiley 代理配置（可选，不设置则使用系统代理）
+export WILEY_PROXY="http://127.0.0.1:7890"
 ```
 
 ### 4. 推送配置（可选）
