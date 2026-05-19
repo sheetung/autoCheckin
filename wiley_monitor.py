@@ -260,7 +260,7 @@ def send_dingtalk_notification(changes, all_submissions):
     text_lines.append("")
     for sub in all_submissions:
         emoji = format_status_emoji(sub["status"])
-        text_lines.append(f"- {emoji} **{sub['manuscript_id']}**: {sub['title'][:40]}... [{sub['status']}]")
+        text_lines.append(f"- {emoji} {sub['manuscript_id']} {sub['title'][:35]}... [{sub['status']}]")
 
     text = "\n".join(text_lines)
 
