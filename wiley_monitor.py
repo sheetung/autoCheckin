@@ -259,8 +259,8 @@ def send_dingtalk_notification(changes, all_submissions):
     text_lines.append("### 当前投稿概览")
     text_lines.append("")
     for sub in all_submissions:
-        emoji = format_status_emoji(sub["status"])
-        text_lines.append(f"- {emoji} {sub['manuscript_id']} {sub['title'][:35]}... [{sub['status']}]")
+        status = sub["status"]
+        text_lines.append(f"{sub['manuscript_id']} | {sub['title'][:35]}... | {status}")
 
     text = "\n".join(text_lines)
 
