@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 new Env('Wiley论文状态监控');
+name: Wiley论文状态监控
+cron: 35 * * * *
 """
 import os
 import json
